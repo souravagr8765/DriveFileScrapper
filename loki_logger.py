@@ -10,6 +10,7 @@ import re
 from datetime import datetime
 
 LOG_TIMESTAMP_REGEX = re.compile(r'^(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}(?:,\d+)?)\s*\|')
+DEVICE_NAME = os.environ.get("DEVICE_NAME", "OPPO_K13_5G")
 
 def parse_log_timestamp(line, default_ts_ns):
     match = LOG_TIMESTAMP_REGEX.match(line)
@@ -45,8 +46,8 @@ def push_to_loki(log_lines, url, username, password, job_name):
             "streams": [
                 {
                     "stream": {
-                        "job": job_name,
-                        "host": socket.gethostname()
+                        "service_name": job_name,
+                        "device": DEVICE_NAME
                     },
                     "values": values
                 }

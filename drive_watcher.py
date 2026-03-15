@@ -262,7 +262,7 @@ def main():
         try:
             conn = psycopg2.connect(NHOST_DB_URL)
             init_db(conn)
-            logger.info("   ✅ Connected to Database.")
+            logger.info("✅ Connected to Database.")
         except Exception as e:
             logger.error(f"⚠️ Warning: Database connection failed. Falling back to local state. Error: {e}")
             conn = None
