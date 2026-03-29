@@ -17,7 +17,7 @@ import os
 import sys
 import subprocess
 import atexit
-import logging
+import loki_logger as logger
 import json
 import requests
 import psycopg2
@@ -42,8 +42,8 @@ RCLONE_REMOTE = os.getenv("RCLONE_REMOTE")
 DRIVE_FOLDER = os.getenv("DRIVE_FOLDER")
 
 # Telegram bot token (from @BotFather) and your chat/user ID
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID=os.getenv("TELEGRAM_CHAT_ID").split(",");
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_FILE_INFO_BOT")
+TELEGRAM_CHAT_ID=os.getenv("TELEGRAM_FILE_INFO_CHAT_ID").split(",");
 # Where to save downloaded files locally
 DOWNLOAD_DIR = Path(os.getenv("DOWNLOAD_DIR"))
 
@@ -57,15 +57,15 @@ LOG_FILE = "./Scrapper.log"
 # ──────────────────────────────────────────────
 # Setup logging to match pdf_sync.py
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[
-        logging.FileHandler(LOG_FILE, encoding='utf-8'),
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-logger = logging.getLogger(__name__)
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format='%(asctime)s [%(levelname)s] %(message)s',
+#     handlers=[
+#         logging.FileHandler(LOG_FILE, encoding='utf-8'),
+#         logging.StreamHandler(sys.stdout)
+#     ]
+# )
+# logger = logging.getLogger(__name__)
 
 def resolve_folder(folder: str):
     """
@@ -289,7 +289,7 @@ def main():
         size      = f.get("Size", 0)
         size_str  = f"{size / 1024:.1f} KB" if size else "unknown size"
 
-        logger.info(f"\n  ⬇️  Downloading: {file_path} ({size_str})")
+        logger.info(f"⬇️  Downloading: {file_path} ({size_str})")
         try:
             download_file(file_path, rclone_path, folder_id, DOWNLOAD_DIR)
             print(f"     ✅ Saved to {DOWNLOAD_DIR / file_path}")
@@ -317,7 +317,7 @@ def main():
             pass
 
     if downloaded_names:
-        logger.info("\n📤 Sending Telegram notification...")
+        logger.info("📤 Sending Telegram notification...")
         
         chunks = []
         current_chunk = []
@@ -353,7 +353,7 @@ def main():
             
         logger.info("   ✅ Notification sent!")
 
-    logger.info(f"\n✅ Done! Downloaded {len(downloaded_names)} file(s).\n")
+    logger.info(f"✅ Done! Downloaded {len(downloaded_names)} file(s).\n")
 
 def cleanup():
     """Terminate background processes on exit."""
@@ -374,37 +374,37 @@ def cleanup():
 atexit.register(cleanup)
 
 if __name__ == "__main__":
-    # Global reference to the background loki logger process
-    _loki_process = None
+    # # Global reference to the background loki logger process
+    # _loki_process = None
 
-    def init_loki_logger(log_file):
-        global _loki_process
+    # def init_loki_logger(log_file):
+    #     global _loki_process
         
-        # Calculate where to start reading the log file (so we don't resend old logs)
-        start_pos = 0
-        if os.path.exists(log_file):
-            start_pos = os.path.getsize(log_file)
+    #     # Calculate where to start reading the log file (so we don't resend old logs)
+    #     start_pos = 0
+    #     if os.path.exists(log_file):
+    #         start_pos = os.path.getsize(log_file)
         
-        loki_url = os.environ.get("LOKI_URL")
-        if loki_url:
-            # Assumes loki_logger.py is in the same directory as this script
-            base_dir = os.path.dirname(os.path.abspath(__file__))
-            loki_script_path = os.path.join(base_dir, "loki_logger.py")
+    #     loki_url = os.environ.get("LOKI_URL")
+    #     if loki_url:
+    #         # Assumes loki_logger.py is in the same directory as this script
+    #         base_dir = os.path.dirname(os.path.abspath(__file__))
+    #         loki_script_path = os.path.join(base_dir, "loki_logger.py")
         
-            if os.path.exists(loki_script_path):
-                logger.info(f"Starting background Loki logger streaming to {loki_url}")
-                try:
-                    _loki_process = subprocess.Popen(
-                        [sys.executable, loki_script_path, log_file, str(start_pos)],
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
-                        start_new_session=True # Runs independently
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to start Loki logger subprocess: {e}")
-            else:
-                logger.warning("loki_logger.py not found. Loki logging will not be available.")
+    #         if os.path.exists(loki_script_path):
+    #             logger.info(f"Starting background Loki logger streaming..")
+    #             try:
+    #                 _loki_process = subprocess.Popen(
+    #                     [sys.executable, loki_script_path, log_file, str(start_pos)],
+    #                     stdout=subprocess.DEVNULL,
+    #                     stderr=subprocess.DEVNULL,
+    #                     start_new_session=True # Runs independently
+    #                 )
+    #             except Exception as e:
+    #                 logger.error(f"Failed to start Loki logger subprocess: {e}")
+    #         else:
+    #             logger.warning("loki_logger.py not found. Loki logging will not be available.")
 
-    # Call this to start the logger (pass the path to your log file)
-    init_loki_logger(LOG_FILE) # Assuming LOG_FILE = "./compressor.log" from Step 2
+    # # Call this to start the logger (pass the path to your log file)
+    # init_loki_logger(LOG_FILE) # Assuming LOG_FILE = "./compressor.log" from Step 2
     main()

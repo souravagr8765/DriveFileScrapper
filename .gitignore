@@ -3,3 +3,4 @@ state.json
 downloads
 docs
 *.log
+__pycache__
